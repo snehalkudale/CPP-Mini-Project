@@ -1,0 +1,6 @@
+17:08:15 **** Incremental Build of configuration Debug for project Library ****
+Info: Internal Builder is used for build
+g++ -o Library.exe "src\\Library.o" 
+
+17:08:16 Build Finished. 0 errors, 0 warnings. (took 416ms)
+

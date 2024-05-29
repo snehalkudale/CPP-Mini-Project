@@ -1,0 +1,358 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <algorithm> // For std::remove and std::find
+
+using namespace std;
+
+class Book {
+public:
+    int id;
+    string title;
+    string author;
+    bool isCheckedOut;
+
+    // Default constructor
+    Book() : id(0), title(""), author(""), isCheckedOut(false) {}
+
+    // Parameterized constructor
+    Book(int id, string title, string author)
+        : id(id), title(title), author(author), isCheckedOut(false) {}
+};
+
+class User {
+public:
+    string username;
+    string password;
+    vector<int> checkedOutBooks;
+
+    // Default constructor
+    User() : username(""), password("") {}
+
+    // Parameterized constructor
+    User(string username, string password)
+        : username(username), password(password) {}
+};
+
+class Library {
+private:
+    unordered_map<int, Book> books;
+    unordered_map<string, User> users;
+    string loggedInAdmin;
+    string loggedInUser;
+
+public:
+    Library() {
+        loggedInAdmin = "";
+        loggedInUser = "";
+    }
+
+    // Admin functionalities
+    void addBook(int id, string title, string author) {
+        if (loggedInAdmin == "") {
+            cout << "Admin login required." << endl;
+            return;
+        }
+        books[id] = Book(id, title, author);
+    }
+
+    void removeBook(int id) {
+        if (loggedInAdmin == "") {
+            cout << "Admin login required." << endl;
+            return;
+        }
+        books.erase(id);
+    }
+
+    void updateBookDetails(int id, string newTitle, string newAuthor) {
+        if (loggedInAdmin == "") {
+            cout << "Admin login required." << endl;
+            return;
+        }
+        if (books.find(id) != books.end()) {
+            books[id].title = newTitle;
+            books[id].author = newAuthor;
+        }
+    }
+
+    void viewAllBooks() {
+        if (loggedInAdmin == "") {
+            cout << "Admin login required." << endl;
+            return;
+        }
+        for (const auto &book : books) {
+            cout << "ID: " << book.second.id << ", Title: " << book.second.title << ", Author: " << book.second.author << ", Checked Out: " << (book.second.isCheckedOut ? "Yes" : "No") << endl;
+        }
+    }
+
+    void viewAllUsers() {
+        if (loggedInAdmin == "") {
+            cout << "Admin login required." << endl;
+            return;
+        }
+        for (const auto &user : users) {
+            cout << "Username: " << user.second.username << endl;
+        }
+    }
+
+    // User functionalities
+    void searchBook(string title) {
+        if (loggedInUser == "") {
+            cout << "User login required." << endl;
+            return;
+        }
+        for (const auto &book : books) {
+            if (book.second.title == title) {
+                cout << "ID: " << book.second.id << ", Title: " << book.second.title << ", Author: " << book.second.author << ", Checked Out: " << (book.second.isCheckedOut ? "Yes" : "No") << endl;
+            }
+        }
+    }
+
+    void viewBookDetails(int id) {
+        if (loggedInUser == "") {
+            cout << "User login required." << endl;
+            return;
+        }
+        if (books.find(id) != books.end()) {
+            Book &book = books[id];
+            cout << "ID: " << book.id << ", Title: " << book.title << ", Author: " << book.author << ", Checked Out: " << (book.isCheckedOut ? "Yes" : "No") << endl;
+        } else {
+            cout << "Book not found." << endl;
+        }
+    }
+
+    void checkoutBook(int id) {
+        if (loggedInUser == "") {
+            cout << "User login required." << endl;
+            return;
+        }
+        if (loggedInUser != "" && books.find(id) != books.end() && !books[id].isCheckedOut) {
+            books[id].isCheckedOut = true;
+            users[loggedInUser].checkedOutBooks.push_back(id);
+        } else {
+            cout << "Book cannot be checked out." << endl;
+        }
+    }
+
+    void returnBook(int id) {
+        if (loggedInUser == "") {
+            cout << "User login required." << endl;
+            return;
+        }
+        if (loggedInUser != "" && books.find(id) != books.end() && books[id].isCheckedOut) {
+            books[id].isCheckedOut = false;
+            auto &checkedOutBooks = users[loggedInUser].checkedOutBooks;
+            checkedOutBooks.erase(remove(checkedOutBooks.begin(), checkedOutBooks.end(), id), checkedOutBooks.end());
+        } else {
+            cout << "Book cannot be returned." << endl;
+        }
+    }
+
+    void viewCheckedOutBooks() {
+        if (loggedInUser == "") {
+            cout << "User login required." << endl;
+            return;
+        }
+        if (loggedInUser != "") {
+            for (int id : users[loggedInUser].checkedOutBooks) {
+                viewBookDetails(id);
+            }
+        } else {
+            cout << "No user is logged in." << endl;
+        }
+    }
+
+    // Login and logout functionalities
+    void adminLogin(string username, string password) {
+        if (username == "admin" && password == "admin") {
+            loggedInAdmin = username;
+            cout << "Admin login successfully." << endl;
+        } else {
+            cout << "Invalid admin credentials." << endl;
+        }
+    }
+
+    void adminLogout() {
+        loggedInAdmin = "";
+    }
+
+    void userLogin(string username, string password) {
+        if (users.find(username) != users.end() && users[username].password == password) {
+            loggedInUser = username;
+            cout << "User logged in successfully." << endl;
+        } else {
+            cout << "Invalid user credentials." << endl;
+        }
+    }
+
+    void userLogout() {
+        loggedInUser = "";
+    }
+
+    void registerUser(string username, string password) {
+        if (users.find(username) == users.end()) {
+            users[username] = User(username, password);
+            cout << "User registered successfully." << endl;
+        } else {
+            cout << "User already exists." << endl;
+        }
+    }
+
+    void displayMenu() {
+        cout << "Library Management System" << endl;
+        if (loggedInAdmin == "" && loggedInUser == "") {
+            // Display admin and user login options if no one is logged in
+            cout << "1. Admin Login" << endl;
+            cout << "2. User Login" << endl;
+            cout << "3. Register User" << endl;
+            cout << "4. Exit" << endl;
+        } else if (loggedInAdmin != "") {
+            // Display admin functionalities if admin is logged in
+            cout << "1. Admin Logout" << endl;
+            cout << "2. Add Book (Admin)" << endl;
+            cout << "3. Remove Book (Admin)" << endl;
+            cout << "4. Update Book Details (Admin)" << endl;
+            cout << "5. View All Books (Admin)" << endl;
+            cout << "6. View All Users (Admin)" << endl;
+            cout << "7. Exit" << endl;
+        } else if (loggedInUser != "") {
+            // Display user functionalities if a user is logged in
+            cout << "1. User Logout" << endl;
+            cout << "2. Search Book" << endl;
+            cout << "3. View Book Details" << endl;
+            cout << "4. Checkout Book" << endl;
+            cout << "5. Return Book" << endl;
+            cout << "6. View Checked Out Books" << endl;
+            cout << "7. Exit" << endl;
+        }
+
+        cout << "Enter your choice: ";
+    }
+
+    void executeChoice(int choice) {
+        string username, password, title, author;
+        int id;
+
+        switch (choice) {
+        case 1:
+            if (loggedInAdmin == "" && loggedInUser == "") {
+                // Admin login
+                cout << "Enter admin username: ";
+                cin >> username;
+                cout << "Enter admin password: ";
+                cin >> password;
+                adminLogin(username, password);
+            } else if (loggedInAdmin != "") {
+                // Admin logout
+                adminLogout();
+            } else if (loggedInUser != "") {
+                // User logout
+                userLogout();
+            }
+            break;
+        case 2:
+            if (loggedInAdmin == "" && loggedInUser == "") {
+                // User login
+                cout << "Enter username: ";
+                cin >> username;
+                cout << "Enter password: ";
+                cin >> password;
+                userLogin(username, password);
+            } else if (loggedInAdmin != "") {
+                // Add book
+                cout << "Enter book ID: ";
+                cin >> id;
+                cout << "Enter book title: ";
+                cin.ignore();
+                getline(cin, title);
+                cout << "Enter book author: ";
+                getline(cin, author);
+                addBook(id, title, author);
+            }
+            break;
+        case 3:
+            if (loggedInAdmin == "" && loggedInUser == "") {
+                // Register user
+                cout << "Enter username: ";
+                cin >> username;
+                cout << "Enter password: ";
+                cin >> password;
+                registerUser(username, password);
+            } else if (loggedInAdmin != "") {
+                // Remove book
+                cout << "Enter book ID: ";
+                cin >> id;
+                removeBook(id);
+            }
+            break;
+        case 4:
+            if (loggedInAdmin != "") {
+                // Update book details
+                cout << "Enter book ID: ";
+                cin >> id;
+                cout << "Enter new book title: ";
+                cin.ignore();
+                getline(cin, title);
+                cout << "Enter new book author: ";
+                getline(cin, author);
+                updateBookDetails(id, title, author);
+            } else {
+                cout << "Invalid choice." << endl;
+            }
+            break;
+        case 5:
+            if (loggedInAdmin != "") {
+                // View all books
+                viewAllBooks();
+            } else if (loggedInUser != "") {
+                // Search book
+                cout << "Enter book title: ";
+                cin.ignore();
+                getline(cin, title);
+                searchBook(title);
+            } else {
+                cout << "Invalid choice." << endl;
+            }
+            break;
+        case 6:
+            if (loggedInAdmin != "") {
+                // View all users
+                viewAllUsers();
+            } else if (loggedInUser != "") {
+                // View checked out books
+                viewCheckedOutBooks();
+            } else {
+                cout << "Invalid choice." << endl;
+            }
+            break;
+        case 7:
+            cout << "Exiting..." << endl;
+            break;
+        default:
+            cout << "Invalid choice." << endl;
+            break;
+        }
+    }
+
+    void run() {
+        int choice;
+
+        do {
+            displayMenu();
+            while (!(cin >> choice)) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter a number: ";
+            }
+            executeChoice(choice);
+        } while (choice != 7);
+    }
+};
+
+int main() {
+    Library library;
+    library.run();
+
+    return 0;
+}
